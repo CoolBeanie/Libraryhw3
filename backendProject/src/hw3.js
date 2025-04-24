@@ -112,14 +112,15 @@ app.delete("/rating", (req, res) => {
 // New endpoint for book suggestions based on ratings
 app.get("/suggestions", async (req, res) => {
   try {
-    const { index } = req.query;
-    
-    if (index === undefined || index < 0 || index >= ratingList.length) {
-      return res.status(400).json({ error: "Invalid index" });
+    if (ratingList.length === 0) {
+      return res.status(400).json({ error: "No ratings available" });
     }
 
-    const userRating = ratingList[index];
-    const prompt = buildPrompt(userRating);
+    // Use the first rating as an example, or combine all ratings
+    // Including build prompt inside here to have it be called by just the /suggestions
+    const combinedRatings = ratingList.map(r => r.Rating).join(", ");
+    const prompt = `Based on a user's book ratings (${combinedRatings} stars), suggest 3 books they might enjoy. 
+    For each book, provide the title, author, and a brief reason why they might like it.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
@@ -133,11 +134,11 @@ app.get("/suggestions", async (req, res) => {
   }
 });
 
-function buildPrompt(rating) {
-  return `Based on a user's book rating of ${rating.Rating} stars, suggest 3 books they might enjoy. 
-  For each book, provide the title, author, and a brief reason why they might like it.
-  Format the response as a numbered list with each book on a new line.`;
-}
+// function buildPrompt(rating) {
+//   return `Based on a user's book rating of ${rating.Rating} stars, suggest 3 books they might enjoy. 
+//   For each book, provide the title, author, and a brief reason why they might like it.
+//   Format the response as a numbered list with each book on a new line.`;
+// }
 
 // Start the server
 app.listen(PORT, () => {
